@@ -1,24 +1,16 @@
 'use strict';
 
 // Confirmation Dependancies
-const inspect  = require('util').inspect;
-const Enquirer = require('enquirer');
+const inspect  = require ('util').inspect;
+const Enquirer = require ('enquirer');
 
-// gulp Dependancies
-const gulp = require('gulp');
-require('./gulpfile.js');
-
-// git Dependancies
-//const simpleGit = require('simple-git');
-
-//const gitP = require('simple-git/promise');
-//const git = gitP(__dirname);
-
-
+// testv2
+// Thanks to Chris Matheson for showing me this:
+// https://nodejs.org/dist/latest-v9.x/docs/api/child_process.html#child_process_child_process_execsync_command_options
+const execSync = require('child_process').execSync;
 
 
 // Confirmation
-// TODO: check if repo is clean and only prompt for confirmation if required
 let enquirer = new Enquirer ();
 enquirer.register ('confirm', require ('prompt-confirm'));
 
@@ -39,60 +31,69 @@ enquirer.ask()
 
   // If repo not clean, quit out
   if (test === 'false') {
-	console.log('FALSE');
-	process.exit();
+    console.log('FALSE');
+    process.exit();
   } else {
-	console.log('TRUE');
-	console.log('running');
+    console.log('TRUE');
+    console.log('running');
 
-	// Ask SHA to use
-	enquirer.question('sha', 'SHA?');
+    // Ask SHA to use
+    enquirer.question('sha', 'SHA?');
 
-	enquirer.prompt('sha')
-	  .then(function(shaResult) {
-		console.log(shaResult)
+    enquirer.prompt('sha')
+      .then(function(shaResult) {
 
-		// TODO: avoid nesting / improve code
-		console.log('testing');
+        // Store shaResult
+        const shaResultValue = Object.values(shaResult)[1].toString();
+        console.log('shaResultValue: ' + shaResultValue)
 
-		// Compile existing CSS
-		if (gulp.tasks.styles) {
-			console.log('gulpfile contains task!');
-			gulp.start('styles');
-		}
+        console.log('START: gulp styles 1');
+        execSync('gulp styles');
+        console.log('END: gulp styles 1');
 
-		// Go to CSS path
-		console.log(process.cwd());
-		process.chdir('.tmp/styles');
-		console.log(process.cwd());
+        // Go to CSS path
+        console.log(process.cwd());
+        process.chdir('.tmp/styles');
+        console.log(process.cwd());
 
-		// Create as a new git repo
-		require('simple-git')()
-		  .init()
-		  .add('./*')
-		  .commit('Current CSS!')
+        // Create a new git repo and add current CSS
+        console.log('START: git repo create and add');
+        execSync('git init');
+        execSync('git add .');
+        execSync('git commit -m "Current CSS"');
+        console.log('FINISH: git repo create and add');
 
-		// Go back to route
-		console.log(process.cwd());
-		process.chdir('../..');
-		console.log(process.cwd());
+        // Go back to route
+        console.log(process.cwd());
+        process.chdir('../..');
+        console.log(process.cwd());
 
+        // Go back to specific SHA
+        console.log('START: git revert');
+        console.log('shaResultValue: ' + shaResultValue);
+        execSync('git checkout ' + shaResultValue);
+        console.log('shaResultValue: ' + shaResultValue);
+        console.log('END: git revert');
 
-	  });
+        // TODO: go back x amounts of commits
+        // require('simple-git')()
+        //  .revert('HEAD~2')
 
+        // Compile new CSS
+        console.log('START: gulp styles 2');
+        execSync('gulp styles');
+        console.log('END: gulp styles 2');
 
+        // Go to CSS path
+        console.log(process.cwd());
+        process.chdir('.tmp/styles');
+        console.log(process.cwd());
 
-
-	//gulp.start('styles');
-
-	/* test */
+        // Add new CSS to git
+        console.log('START: New CSS');
+        execSync('git add .');
+        console.log('END: New CSS');
+      });
 
   }
 })
-
-
-/*if () {
-	process.exit()
-}*/
-
-
